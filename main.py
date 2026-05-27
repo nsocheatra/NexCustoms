@@ -1,5 +1,6 @@
 import os
 import sys
+import shlex
 import subprocess
 
 from PySide6.QtWidgets import QApplication
@@ -10,35 +11,39 @@ from updater import check_update
 
 URL = "https://nexcustoms-1036877213685.asia-east1.run.app/"
 
+APP_PROFILE_DIR = os.path.normpath(
+    os.path.join(
+        os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
+        "NexCustomsProfile"
+    )
+)
+
+KNOWN_BROWSERS = [
+    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+    r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
+]
+
 
 # =====================================================
-# FIND MAIN BROWSER
+# FIND BROWSER
 # =====================================================
 
 def find_browser():
 
-    browsers = [
+    for browser in KNOWN_BROWSERS:
 
-        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        resolved = os.path.normpath(browser)
 
-        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-
-        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-
-        r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
-    ]
-
-    for browser in browsers:
-
-        if os.path.exists(browser):
-
-            return browser
+        if os.path.isabs(resolved) and os.path.exists(resolved):
+            return resolved
 
     return None
 
 
 # =====================================================
-# OPEN APP MODE
+# LAUNCH APP
 # =====================================================
 
 def launch_app():
@@ -46,37 +51,30 @@ def launch_app():
     browser = find_browser()
 
     if not browser:
-
-        print("Browser not found.")
+        print("No supported browser found.")
         return
 
-    subprocess.Popen([
+    os.makedirs(APP_PROFILE_DIR, exist_ok=True)
 
+    args = [
         browser,
-
         f"--app={URL}",
-
-        # USE MAIN PROFILE
-        "--profile-directory=Default",
-
+        f"--user-data-dir={APP_PROFILE_DIR}",
         "--disable-infobars",
-
         "--disable-session-crashed-bubble",
-
         "--disable-notifications",
-
         "--disable-popup-blocking",
-
         "--disable-features=TranslateUI",
-
         "--no-first-run",
-
         "--force-dark-mode",
-
         "--window-size=1400,900",
-
         "--window-position=150,50",
-    ])
+    ]
+
+    subprocess.Popen(
+        args,
+        shell=False
+    )
 
 
 # =====================================================
@@ -91,10 +89,8 @@ if __name__ == "__main__":
         QIcon("assets/logo.ico")
     )
 
-    # CHECK UPDATE
     check_update()
 
-    # OPEN APP
     launch_app()
 
     sys.exit()

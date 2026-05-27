@@ -1,0 +1,10 @@
+output/
+build/
+dist/
+installdist/
+installer/
+__pycache__/
+*.pyc
+*.spec
+build.py
+install.md
